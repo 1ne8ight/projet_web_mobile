@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner - Prix Yako</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #F5F5F5; color: #333; font-size: 16px; line-height: 1.5; }
+        .navbar { background-color: #FF8C00; }
+        .navbar-brand, .nav-link { color: #FFFFFF !important; font-size: 18px; font-weight: 600; }
+        .nav-link:hover { color: #2E8B57 !important; }
+        .container { background-color: #FFFFFF; border-radius: 10px; padding: 30px; margin-top: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1 { color: #FF8C00; font-size: 24px; font-weight: 600; margin-bottom: 20px; }
+        .btn-primary { background-color: #2E8B57; border-color: #2E8B57; font-size: 18px; padding: 10px 20px; }
+        .btn-primary:hover { background-color: #FF8C00; border-color: #FF8C00; }
+        .form-label { font-size: 18px; color: #333; }
+        .form-control { font-size: 16px; padding: 10px; }
+        video { border: 2px solid #2E8B57; border-radius: 8px; }
+        .modal-content { border: 2px solid #2E8B57; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'index' %}">OptiPrix</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'index' %}">Accueil</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{% url 'scan' %}">Scanner</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'compare' %}">Comparer</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'visual' %}">Visualiser</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <h1>Scanne une Bonne Affaire, Yako !</h1>
+        <p style="font-size: 18px;">Utilise ta caméra pour scanner un code-barres.</p>
+        <video id="preview" width="100%" height="auto" class="mb-3"></video>
+        <button id="startScan" class="btn btn-primary">Démarrer le Scan</button>
+        <form id="prixForm" class="mt-4" style="display:none;">
+            <div class="mb-3">
+                <label for="code" class="form-label">Code-Barres</label>
+                <input type="text" id="code" class="form-control" readonly>
+            </div>
+            <div class="mb-3">
+                <label for="prix" class="form-label">Prix (FCFA)</label>
+                <input type="number" id="prix" class="form-control" step="0.01" required>
+            </div>
+            <div class="mb-3">
+                <label for="magasin" class="form-label">Nom du Magasin</label>
+                <input type="text" id="magasin" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Ajouter le Prix</button>
+        </form>
+    </div>
+    <div class="modal fade" id="successModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Yako, c'est bon !</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Prix ajouté avec succès ! Merci pour ta contribution.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let codeReader = new ZXing.BrowserMultiFormatReader();
+        document.getElementById('startScan').addEventListener('click', () => {
+            codeReader.decodeFromVideoDevice(null, 'preview', (result, err) => {
+                if (result) {
+                    document.getElementById('code').value = result.text;
+                    document.getElementById('prixForm').style.display = 'block';
+                    codeReader.reset();
+                }
+            });
+        });
+
+        document.getElementById('prixForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            navigator.geolocation.getCurrentPosition((pos) => {
+                const data = {
+                    produit: { code_barre: document.getElementById('code').value },
+                    magasin: { nom: document.getElementById('magasin').value, location: { x: pos.coords.longitude, y: pos.coords.latitude } },
+                    prix: document.getElementById('prix').value
+                };
+                fetch('http://localhost:8000/api/prix/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                }).then(res => res.json()).then(() => {
+                    const modal = new bootstrap.Modal(document.getElementById('successModal'));
+                    modal.show();
+                    document.getElementById('prixForm').reset();
+                    document.getElementById('prixForm').style.display = 'none';
+                });
+            }, () => alert('Géolocalisation requise, yako !'));
+        });
+    </script>
+</body>
+</html>
