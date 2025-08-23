@@ -92,12 +92,12 @@
         </div>
     </nav>
     <div class="container">
-        <h1>Compare les Prix, Yako !</h1>
-        <p style="font-size: 18px;">Entre le code-barres pour voir les prix collaboratifs, ou scrape Jumia pour les prix
-            en ligne.</p>
+        <h1>Comparer les Prix</h1>
+        <!-- <p style="font-size: 18px;">Entre le code-barres pour voir les prix collaboratifs, ou scrape Jumia pour les prix
+            en ligne.</p> -->
 
         <!-- Partie comparaison BD existante -->
-        <div class="mb-3">
+        <!-- <div class="mb-3">
             <label for="searchCode" class="form-label">Code-Barres (BD Collaborative)</label>
             <input type="text" id="searchCode" class="form-control" placeholder="Ex: 123456789">
             <button id="compareBtn" class="btn btn-primary mt-2">Comparer</button>
@@ -112,12 +112,23 @@
                 </tr>
             </thead>
             <tbody></tbody>
-        </table>
+        </table> -->
 
         <!-- Nouvelle partie scraping -->
         <div class="mt-5">
-            <h2>Prix en Ligne (Scraping Jumia & Autres)</h2>
+            <h2>Prix en Ligne</h2>
             <div class="mb-3">
+
+                <!-- Tri -->
+                <div class="mt-2">
+                    <select id="categorie" class="form-select">
+                        <option value="">-- Catégorie --</option>
+                        <option value="asc">Global(Jumia)</option>
+                        <option value="electronique">Appareil electronique</option>
+                        <option value="vivrier">Vivrier</option>
+                    </select>
+                </div> <br>
+
                 <label for="scrapeQuery" class="form-label">Recherche Produit (ex: smartphone samsung)</label>
                 <input type="text" id="scrapeQuery" class="form-control" placeholder="Ex: smartphone samsung">
 
@@ -133,8 +144,8 @@
                     </div>
 
                     <div class="col">
-                        <input type="number" id="nbreproduits" class="form-control" placeholder="Nombre de produits a affichés"
-                            >
+                        <input type="number" id="nbreproduits" class="form-control"
+                            placeholder="Nombre de produits a affichés" value="10">
                     </div>
                 </div>
 
@@ -148,20 +159,30 @@
                 </div>
 
                 <button id="scrapeBtn" class="btn btn-primary mt-2">Scraper</button>
+
+                <!-- Bouton comparer -->
+                <div class="text-center mt-3">
+                    <button id="compareBtn" class="btn btn-warning d-none" data-bs-toggle="modal"
+                        data-bs-target="#compareModal">
+                        Comparer les produits sélectionnés
+                    </button>
+                </div>
             </div>
 
             <!-- Conteneur pour afficher les produits -->
             <div id="scrapeResults" class="d-flex flex-wrap gap-3"></div>
         </div>
 
-        <script>
+
+        <!-- jumia -->
+        <!-- <script>
             document.getElementById('scrapeBtn').addEventListener('click', function () {
                 const query = document.getElementById('scrapeQuery').value.trim();
                 const minPrice = parseInt(document.getElementById('minPrice').value) || 0;
                 const nbreproduits = parseInt(document.getElementById('nbreproduits').value) || 0;
                 const maxPrice = parseInt(document.getElementById('maxPrice').value) || 999999999;
                 const sortOrder = document.getElementById('sortOrder').value;
-                alert(nbreproduits)
+                // alert(nbreproduits)
 
                 if (!query) {
                     alert('Veuillez saisir un produit');
@@ -199,6 +220,7 @@
                                 card.className = "card p-3 shadow-sm m-2";
                                 card.style.width = "250px";
 
+                                // Image
                                 if (prod.image && prod.image !== "N/A") {
                                     const imgEl = document.createElement('img');
                                     imgEl.src = prod.image.startsWith('http') ? prod.image : `https://www.jumia.ci${prod.image}`;
@@ -209,16 +231,86 @@
                                     card.appendChild(imgEl);
                                 }
 
-                                const nomEl = document.createElement('h5');
+                                // Nom
+                                const nomEl = document.createElement('h6');
                                 nomEl.textContent = prod.nom;
                                 nomEl.className = "fw-bold";
                                 card.appendChild(nomEl);
 
-                                const prixEl = document.createElement('p');
-                                prixEl.textContent = prod.prix;
-                                prixEl.className = "text-success";
-                                card.appendChild(prixEl);
+                                const boutique = document.createElement('h7');
+                                boutique.textContent = "Boutique : " + prod.boutique;
+                                boutique.className = "fw";
+                                card.appendChild(boutique);
 
+                                // Prix
+                                const prixWrapper = document.createElement('div');
+
+                                // Ancien prix barré (s’il existe)
+                                if (prod.prix_sans_reduction && prod.prix_sans_reduction !== "N/A") {
+                                    const ancienPrixEl = document.createElement('span');
+                                    ancienPrixEl.textContent = prod.prix_sans_reduction;
+                                    ancienPrixEl.className = "text-muted me-2";
+                                    ancienPrixEl.style.textDecoration = "line-through"; // prix barré
+                                    prixWrapper.appendChild(ancienPrixEl);
+                                }
+
+                                // Prix actuel
+                                const prixEl = document.createElement('span');
+                                prixEl.textContent = prod.prix;
+                                prixEl.className = "text-success fw-bold";
+                                prixWrapper.appendChild(prixEl);
+
+                                card.appendChild(prixWrapper);
+
+                                // Réduction
+                                if (prod.reduction && prod.reduction !== "N/A") {
+                                    const reducEl = document.createElement('span');
+                                    reducEl.textContent = prod.reduction;
+                                    reducEl.className = "badge bg-danger";
+                                    card.appendChild(reducEl);
+                                }
+
+                                // Note + avis
+                                if (prod.note && prod.note !== "N/A") {
+                                    const noteDiv = document.createElement('div');
+                                    noteDiv.className = "mt-2";
+
+                                    // Etoiles dynamiques ⭐
+                                    const note = parseFloat(prod.note);
+                                    let etoilesHTML = "";
+                                    for (let i = 1; i <= 5; i++) {
+                                        if (i <= Math.floor(note)) {
+                                            etoilesHTML += `<span style="color:gold;">★</span>`; // étoile pleine
+                                        } else if (i - note < 1) {
+                                            etoilesHTML += `<span style="color:gold;">☆</span>`; // étoile vide (tu peux mettre demi si tu veux)
+                                        } else {
+                                            etoilesHTML += `<span style="color:lightgray;">★</span>`;
+                                        }
+                                    }
+                                    noteDiv.innerHTML = etoilesHTML + ` <small>(${prod.nb_avis || 0} avis)</small>`;
+                                    card.appendChild(noteDiv);
+                                }
+
+                                // Checkbox sélection
+                                const checkDiv = document.createElement('div');
+                                checkDiv.className = "form-check mb-2";
+                                const checkbox = document.createElement('input');
+                                checkbox.type = "checkbox";
+                                checkbox.className = "form-check-input";
+                                checkbox.id = "select-" + index;
+                                checkbox.addEventListener("change", () => toggleProductSelection(prod, checkbox));
+                                const label = document.createElement('label');
+                                label.className = "form-check-label";
+                                label.setAttribute("for", "select-" + index);
+                                label.textContent = "Sélectionner";
+                                checkDiv.appendChild(checkbox);
+                                checkDiv.appendChild(label);
+                                card.appendChild(checkDiv);
+
+
+
+
+                                // QR Code lien
                                 const qrWrapper = document.createElement('a');
                                 qrWrapper.href = lien;
                                 qrWrapper.target = "_blank";
@@ -235,96 +327,317 @@
                                     height: 100
                                 });
                             });
+                        }
+                        else {
+                            resultsDiv.innerHTML = '<p class="text-danger">Aucun résultat trouvé</p>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        // alert('Erreur lors du scraping');
+                        console.log('Erreur lors du scraping');
+                    });
+            });
+        </script> -->
+
+        <!-- global -->
+        <script>
+            document.getElementById('scrapeBtn').addEventListener('click', function () {
+                const query = document.getElementById('scrapeQuery').value.trim();
+                const minPrice = parseInt(document.getElementById('minPrice').value) || 0;
+                const maxPrice = parseInt(document.getElementById('maxPrice').value) || 999999999;
+                const nbreproduits = parseInt(document.getElementById('nbreproduits').value) || 10;
+                const sortOrder = document.getElementById('sortOrder').value;
+                const categorie = document.getElementById('categorie').value;
+
+                if (!query) {
+                    alert('Veuillez saisir un produit');
+                    return;
+                }
+
+                fetch(`/optiprice_app/compare/chercher_produit_global/?nom=${encodeURIComponent(query)}&nbreproduits=${encodeURIComponent(nbreproduits)}&categorie=${encodeURIComponent(categorie)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        let produits = data.produits || [];
+
+                        // Transformer prix en nombre utilisable
+                        produits = produits.map(p => {
+                            let prixNum = parseInt((p.prix || "0").replace(/[^\d]/g, ""));
+                            return { ...p, prixNum: prixNum };
+                        });
+
+                        // Filtrage
+                        produits = produits.filter(p => p.prixNum >= minPrice && p.prixNum <= maxPrice);
+
+                        // Tri
+                        if (sortOrder === "asc") {
+                            produits.sort((a, b) => a.prixNum - b.prixNum);
+                        } else if (sortOrder === "desc") {
+                            produits.sort((a, b) => b.prixNum - a.prixNum);
+                        }
+
+                        const resultsDiv = document.getElementById('scrapeResults');
+                        resultsDiv.innerHTML = '';
+
+                        if (produits.length > 0) {
+                            produits.forEach((prod, index) => {
+                                const card = document.createElement('div');
+                                card.className = "card p-3 shadow-sm m-2";
+                                card.style.width = "250px";
+
+                                // Image
+                                if (prod.image && prod.image !== "N/A") {
+                                    const imgEl = document.createElement('img');
+                                    imgEl.src = prod.image;
+                                    imgEl.alt = prod.nom;
+                                    imgEl.className = "card-img-top mb-2";
+                                    imgEl.style.maxHeight = "180px";
+                                    imgEl.style.objectFit = "contain";
+                                    card.appendChild(imgEl);
+                                }
+
+                                // Nom
+                                const nomEl = document.createElement('h6');
+                                nomEl.textContent = prod.nom;
+                                nomEl.className = "fw-bold";
+                                card.appendChild(nomEl);
+
+                                // Boutique / Marchand (si dispo)
+                                if (prod.boutique || prod.marchand) {
+                                    const boutique = document.createElement('p');
+                                    boutique.textContent = "Boutique : " + (prod.boutique || prod.marchand);
+                                    boutique.className = "small text-muted";
+                                    card.appendChild(boutique);
+                                }
+
+                                // Prix (avec ancien prix s’il existe)
+                                const prixWrapper = document.createElement('div');
+                                if (prod.prix_sans_reduction && prod.prix_sans_reduction !== "0 FCFA") {
+                                    const ancienPrixEl = document.createElement('span');
+                                    ancienPrixEl.textContent = prod.prix_sans_reduction;
+                                    ancienPrixEl.className = "text-muted me-2";
+                                    ancienPrixEl.style.textDecoration = "line-through";
+                                    prixWrapper.appendChild(ancienPrixEl);
+                                }
+                                const prixEl = document.createElement('span');
+                                prixEl.textContent = prod.prix;
+                                prixEl.className = "text-success fw-bold";
+                                prixWrapper.appendChild(prixEl);
+                                card.appendChild(prixWrapper);
+
+                                // Réduction
+                                if (prod.reduction && prod.reduction !== "0%") {
+                                    const reducEl = document.createElement('span');
+                                    reducEl.textContent = prod.reduction;
+                                    reducEl.className = "badge bg-danger";
+                                    card.appendChild(reducEl);
+                                }
+
+                                // Description (Adjovan par ex.)
+                                if (prod.description) {
+                                    const descEl = document.createElement('p');
+                                    descEl.textContent = prod.description;
+                                    descEl.className = "small mt-2";
+                                    card.appendChild(descEl);
+                                }
+
+                                // Notes + avis
+                                if (prod.note && prod.note !== "N/A") {
+                                    const noteDiv = document.createElement('div');
+                                    noteDiv.className = "mt-2";
+                                    const note = parseFloat(prod.note);
+                                    let etoilesHTML = "";
+                                    for (let i = 1; i <= 5; i++) {
+                                        if (i <= Math.floor(note)) {
+                                            etoilesHTML += `<span style="color:gold;">★</span>`;
+                                        } else {
+                                            etoilesHTML += `<span style="color:lightgray;">★</span>`;
+                                        }
+                                    }
+                                    noteDiv.innerHTML = etoilesHTML + ` <small>(${prod.nb_avis || 0} avis)</small>`;
+                                    card.appendChild(noteDiv);
+                                }
+
+                                // Checkbox sélection
+                                const checkDiv = document.createElement('div');
+                                checkDiv.className = "form-check mb-2";
+                                const checkbox = document.createElement('input');
+                                checkbox.type = "checkbox";
+                                checkbox.className = "form-check-input";
+                                checkbox.id = "select-" + index;
+                                checkbox.addEventListener("change", () => toggleProductSelection(prod, checkbox));
+                                const label = document.createElement('label');
+                                label.className = "form-check-label";
+                                label.setAttribute("for", "select-" + index);
+                                label.textContent = "Sélectionner";
+                                checkDiv.appendChild(checkbox);
+                                checkDiv.appendChild(label);
+                                card.appendChild(checkDiv);
+
+                                // QR Code
+                                if (prod.lien) {
+                                    const qrWrapper = document.createElement('a');
+                                    qrWrapper.href = prod.lien.startsWith('http') ? prod.lien : `https://www.jumia.ci${prod.lien}`;
+                                    qrWrapper.target = "_blank";
+                                    const qrDiv = document.createElement('div');
+                                    qrDiv.id = "qrcode-" + index;
+                                    qrWrapper.appendChild(qrDiv);
+                                    card.appendChild(qrWrapper);
+
+                                    new QRCode(qrDiv, {
+                                        text: qrWrapper.href,
+                                        width: 100,
+                                        height: 100
+                                    });
+                                }
+
+                                resultsDiv.appendChild(card);
+                            });
                         } else {
                             resultsDiv.innerHTML = '<p class="text-danger">Aucun résultat trouvé</p>';
                         }
                     })
                     .catch(error => {
                         console.error(error);
-                        alert('Erreur lors du scraping');
+                        console.log('Erreur lors du scraping');
                     });
             });
         </script>
 
-    </div>
+
+        <!-- Modal comparatif -->
+        <div class="modal fade" id="compareModal" tabindex="-1" aria-labelledby="compareModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="compareModalLabel">Comparer les produits</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <table class="table table-bordered text-center align-middle">
+                            <!-- Ajout d'une colonne Suggestion -->
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Image</th>
+                                    <th>Nom</th>
+                                    <th>Prix</th>
+                                    <th>Réduction</th>
+                                    <th>Note</th>
+                                    <th>Nb Avis</th>
+                                    <th>Lien</th>
+                                    <th>QR Code</th>
+                                    <th>Suggestion</th>
+                                </tr>
+                            </thead>
+                            <tbody id="compareTableBody"></tbody>
+
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
 
 
+        <script>
+            let selectedProducts = [];
 
+            function toggleProductSelection(prod, checkbox) {
+                if (checkbox.checked) {
+                    selectedProducts.push(prod);
+                } else {
+                    selectedProducts = selectedProducts.filter(p => p.lien !== prod.lien);
+                }
 
+                // Affiche le bouton comparer seulement si au moins 2 produits sont sélectionnés
+                const compareBtn = document.getElementById('compareBtn');
+                compareBtn.classList.toggle("d-none", selectedProducts.length < 2);
+            }
 
+            function calculateScore(prod) {
+                let score = 0;
 
+                // Note (sur 5)
+                const note = parseFloat(prod.note) || 0;
+                score += note * 3;
 
+                // Nombre d'avis (logarithme pour éviter qu'un produit avec 10 000 avis écrase tout)
+                const avis = parseInt(prod.nb_avis) || 0;
+                score += Math.log1p(avis) * 2; // log1p évite les valeurs trop extrêmes
 
+                // Réduction (%)
+                let reduction = 0;
+                if (prod.reduction && prod.reduction.includes("%")) {
+                    reduction = parseInt(prod.reduction.replace("%", "")) || 0;
+                }
+                score += reduction * 1.5;
 
+                // Prix (on pénalise les prix élevés)
+                let prix = parseFloat(prod.prix.replace(/[^\d.,]/g, "").replace(",", ".")) || 0;
+                if (prix > 0) score += (1000 / prix) * 2; // plus le prix est bas, plus le score monte
 
+                return score;
+            }
 
+            // Quand on ouvre le modal, remplir le tableau
+            document.getElementById('compareBtn').addEventListener('click', function () {
+                const tbody = document.getElementById('compareTableBody');
+                tbody.innerHTML = "";
 
+                // Trouver le meilleur produit
+                let bestScore = -Infinity;
+                let bestProd = null;
 
+                selectedProducts.forEach(prod => {
+                    const lien = prod.lien.startsWith('http') ? prod.lien : `https://www.jumia.ci${prod.lien}`;
+                    const row = document.createElement('tr');
 
+                    const score = calculateScore(prod);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestProd = prod;
+                    }
 
+                    row.innerHTML = `
+            <td><img src="${prod.image}" alt="${prod.nom}" style="width:100px; max-height:100px; object-fit:contain;"></td>
+            <td>${prod.nom}</td>
+            <td>
+                ${prod.prix_sans_reduction && prod.prix_sans_reduction !== "N/A"
+                            ? `<span class="text-muted text-decoration-line-through me-2">${prod.prix_sans_reduction}</span>`
+                            : ""}
+                <span class="text-success fw-bold">${prod.prix}</span>
+            </td>
+            <td>${prod.reduction && prod.reduction !== "N/A" ? `<span class="badge bg-danger">${prod.reduction}</span>` : "-"}</td>
+            <td>${prod.note && prod.note !== "N/A" ? prod.note + "★" : "-"}</td>
+            <td>${prod.nb_avis || "-"}</td>
+            <td><a href="${lien}" target="_blank" class="btn btn-sm btn-primary">Voir</a></td>
+            <td>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(lien)}" 
+                     alt="QR Code">
+            </td>
+            <td class="suggestion-cell"></td>
+        `;
 
+                    tbody.appendChild(row);
+                });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-    <script>
-        let map = L.map('map').setView([5.359951, -4.008256], 13); // Abidjan default
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
-
-        document.getElementById('compareBtn').addEventListener('click', () => {
-            const code = document.getElementById('searchCode').value;
-            fetch(`http://localhost:8000/api/prix/?code_barre=${code}`)
-                .then(res => res.json())
-                .then(data => {
-                    const tbody = document.querySelector('#prixTable tbody');
-                    tbody.innerHTML = '';
-                    map.eachLayer(layer => { if (layer instanceof L.Marker) map.removeLayer(layer); });
-                    data.forEach(p => {
-                        const row = `<tr><td>${p.magasin.nom}</td><td>${p.prix} FCFA</td><td>${new Date(p.date).toLocaleDateString()}</td></tr>`;
-                        tbody.innerHTML += row;
-                        if (p.magasin.location) {
-                            L.marker([p.magasin.location.y, p.magasin.location.x]).addTo(map)
-                                .bindPopup(`${p.magasin.nom}: ${p.prix} FCFA`);
+                // Marquer le meilleur produit
+                if (bestProd) {
+                    [...tbody.querySelectorAll("tr")].forEach((tr, idx) => {
+                        if (selectedProducts[idx].lien === bestProd.lien) {
+                            tr.querySelector(".suggestion-cell").innerHTML = `<span class="badge bg-success">🔥 Meilleure affaire</span>`;
+                        } else {
+                            tr.querySelector(".suggestion-cell").innerHTML = `<span class="text-muted">-</span>`;
                         }
                     });
-                });
-        });
+                }
+            });
 
-        // Nouveau code pour scraping
-        document.getElementById('scrapeBtn').addEventListener('click', () => {
-            const query = document.getElementById('scrapeQuery').value;
-            const site = document.getElementById('scrapeSite').value;
-            fetch(`http://localhost:8000/api/scrape/?query=${encodeURIComponent(query)}&site=${site}`)
-                .then(res => res.json())
-                .then(data => {
-                    const tbody = document.querySelector('#scrapeTable tbody');
-                    tbody.innerHTML = '';
-                    if (data.products) {
-                        data.products.forEach(p => {
-                            const row = `<tr><td>${p.name}</td><td>${p.price} FCFA</td><td><a href="${p.url}" target="_blank">Voir</a></td></tr>`;
-                            tbody.innerHTML += row;
-                        });
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="3">Erreur: ' + (data.products[0].error || 'Aucun résultat') + '</td></tr>';
-                    }
-                });
-        });
-    </script>
+        </script>
+
+
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
 
 </body>
 
