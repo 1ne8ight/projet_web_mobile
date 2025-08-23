@@ -130,7 +130,113 @@
                 </div> <br>
 
                 <label for="scrapeQuery" class="form-label">Recherche Produit (ex: smartphone samsung)</label>
-                <input type="text" id="scrapeQuery" class="form-control" placeholder="Ex: smartphone samsung">
+                <input type="text" id="scrapeQuery" class="form-control" placeholder="Ex: smartphone samsung"
+                    autocomplete="off">
+                <div id="autocompleteList" class="list-group position-absolute w-50" style="z-index: 1000;"></div>
+
+                <script>
+                    const suggestions = [
+                        // Global (Jumia)
+                        "samsung",
+                        "iphone",
+                        "ordinateur portable",
+                        "télévision",
+                        "écouteurs bluetooth",
+                        "machine à laver",
+                        "réfrigérateur",
+                        "climatiseur",
+                        "casque gamer",
+                        "tablette samsung",
+                        "enceinte portable",
+                        "appareil photo",
+                        "console de jeu",
+                        "montre connectée",
+                        "caméra sportive",
+                        "routeur internet",
+                        "chargeur sans fil",
+                        "clé HDMI",
+                        "kit mains libres",
+                        "scanner portable",
+
+                        // Appareil électronique
+                        "enceinte bluetooth",
+                        "caméra de surveillance",
+                        "chargeur rapide",
+                        "clé USB",
+                        "disque dur externe",
+                        "imprimante",
+                        "routeur wifi",
+                        "smartwatch",
+                        "projecteur",
+                        "manette de jeu",
+                        "microphone",
+                        "casque audio",
+                        "chargeur solaire",
+                        "batterie externe",
+                        "station météo",
+                        "lampes LED",
+                        "support smartphone",
+                        "caméra dashcam",
+                        "barrette RAM",
+                        "carte mémoire",
+
+                        // Vivrier
+                        "riz",
+                        "huile de cuisson",
+                        "haricot",
+                        "maïs",
+                        "sucre",
+                        "café",
+                        "thé",
+                        "farine",
+                        "pâtes alimentaires",
+                        "légumes surgelés",
+                        "lentilles",
+                        "pois chiches",
+                        "semoule",
+                        "beurre",
+                        "margarine",
+                        "tomates pelées",
+                        "conserves de poisson",
+                        "huile d'olive",
+                        "épices",
+                        "sel"
+                    ];
+
+
+                    const input = document.getElementById("scrapeQuery");
+                    const list = document.getElementById("autocompleteList");
+
+                    input.addEventListener("input", function () {
+                        const query = this.value.toLowerCase();
+                        list.innerHTML = "";
+
+                        if (!query) return;
+
+                        const filtered = suggestions.filter(item => item.toLowerCase().includes(query));
+
+                        filtered.forEach(item => {
+                            const option = document.createElement("button");
+                            option.type = "button";
+                            option.classList.add("list-group-item", "list-group-item-action");
+                            option.textContent = item;
+
+                            option.addEventListener("click", function () {
+                                input.value = item;
+                                list.innerHTML = "";
+                            });
+
+                            list.appendChild(option);
+                        });
+                    });
+
+                    // Masquer la liste si on clique ailleurs
+                    document.addEventListener("click", function (e) {
+                        if (e.target !== input) {
+                            list.innerHTML = "";
+                        }
+                    });
+                </script>
 
                 <!-- Filtre prix -->
                 <div class="row mt-2">
@@ -560,20 +666,20 @@
                 const note = parseFloat(prod.note) || 0;
                 score += note * 3;
 
-                // Nombre d'avis (logarithme pour éviter qu'un produit avec 10 000 avis écrase tout)
+                // Nombre d'avis
                 const avis = parseInt(prod.nb_avis) || 0;
-                score += Math.log1p(avis) * 2; // log1p évite les valeurs trop extrêmes
+                score += Math.log1p(avis) * 2;
 
-                // Réduction (%)
+                // Réduction
                 let reduction = 0;
                 if (prod.reduction && prod.reduction.includes("%")) {
                     reduction = parseInt(prod.reduction.replace("%", "")) || 0;
                 }
                 score += reduction * 1.5;
 
-                // Prix (on pénalise les prix élevés)
+                // Prix
                 let prix = parseFloat(prod.prix.replace(/[^\d.,]/g, "").replace(",", ".")) || 0;
-                if (prix > 0) score += (1000 / prix) * 2; // plus le prix est bas, plus le score monte
+                if (prix > 0) score += (1000 / prix) * 2;
 
                 return score;
             }
@@ -583,7 +689,6 @@
                 const tbody = document.getElementById('compareTableBody');
                 tbody.innerHTML = "";
 
-                // Trouver le meilleur produit
                 let bestScore = -Infinity;
                 let bestProd = null;
 
@@ -598,25 +703,24 @@
                     }
 
                     row.innerHTML = `
-            <td><img src="${prod.image}" alt="${prod.nom}" style="width:100px; max-height:100px; object-fit:contain;"></td>
-            <td>${prod.nom}</td>
-            <td>
-                ${prod.prix_sans_reduction && prod.prix_sans_reduction !== "N/A"
+                <td><img src="${prod.image}" alt="${prod.nom}" style="width:100px; max-height:100px; object-fit:contain;"></td>
+                <td>${prod.nom}</td>
+                <td>
+                    ${prod.prix_sans_reduction && prod.prix_sans_reduction !== "N/A"
                             ? `<span class="text-muted text-decoration-line-through me-2">${prod.prix_sans_reduction}</span>`
                             : ""}
-                <span class="text-success fw-bold">${prod.prix}</span>
-            </td>
-            <td>${prod.reduction && prod.reduction !== "N/A" ? `<span class="badge bg-danger">${prod.reduction}</span>` : "-"}</td>
-            <td>${prod.note && prod.note !== "N/A" ? prod.note + "★" : "-"}</td>
-            <td>${prod.nb_avis || "-"}</td>
-            <td><a href="${lien}" target="_blank" class="btn btn-sm btn-primary">Voir</a></td>
-            <td>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(lien)}" 
-                     alt="QR Code">
-            </td>
-            <td class="suggestion-cell"></td>
-        `;
-
+                    <span class="text-success fw-bold">${prod.prix}</span>
+                </td>
+                <td>${prod.reduction && prod.reduction !== "N/A" ? `<span class="badge bg-danger">${prod.reduction}</span>` : "-"}</td>
+                <td>${prod.note && prod.note !== "N/A" ? prod.note + "★" : "-"}</td>
+                <td>${prod.nb_avis || "-"}</td>
+                <td><a href="${lien}" target="_blank" class="btn btn-sm btn-primary">Voir</a></td>
+                <td>
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(lien)}" 
+                        alt="QR Code">
+                </td>
+                <td class="suggestion-cell"></td>
+            `;
                     tbody.appendChild(row);
                 });
 
@@ -632,7 +736,14 @@
                 }
             });
 
+            // 🔹 Réinitialiser quand on ferme le modal
+            document.getElementById('compareModal').addEventListener('hidden.bs.modal', function () {
+                selectedProducts = []; // vide la sélection
+                document.getElementById('compareTableBody').innerHTML = ""; // vide le tableau
+                document.getElementById('compareBtn').classList.add("d-none"); // cache le bouton
+            });
         </script>
+
 
 
     </div>

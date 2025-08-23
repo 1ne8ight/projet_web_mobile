@@ -2,6 +2,8 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 import requests
 from bs4 import BeautifulSoup
+from django.views.decorators.csrf import csrf_exempt
+
 
 # Create your views here.
 
@@ -20,6 +22,34 @@ def scan(request):
 
 def visual(request):
     return render(request, 'visual.html')
+
+
+
+@csrf_exempt
+def autocomplete(request):
+    query = request.GET.get("q", "").strip()
+    suggestions = []
+
+    if query:
+        try:
+            url = f"https://www.jumia.ci/catalog/api/autocomplete/?q={query}"
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                              "AppleWebKit/537.36 (KHTML, like Gecko) "
+                              "Chrome/114.0.0.0 Safari/537.36"
+            }
+            resp = requests.get(url, headers=headers, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                suggestions = [item['value'] for item in data.get('suggestions', [])]
+
+        except Exception as e:
+            print("Erreur autocomplete:", e)
+
+    return JsonResponse({"suggestions": suggestions})
+
+
+
 
 
 def chercher_produit(request):
