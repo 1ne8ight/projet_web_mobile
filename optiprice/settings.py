@@ -74,16 +74,16 @@ WSGI_APPLICATION = "optiprice.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "optiprix_bd",
-        'USER': 'root',
-        'PASSWORD': '',
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'projet_web_mobile',   # nom de ta base
+        'USER': 'postgres',            # ton user
+        'PASSWORD': '1234',            # ton mot de passe
         'HOST': 'localhost',
-        'PORT': '3306',
-
+        'PORT': '5432',                # port PostgreSQL
     }
 }
+
 
 
 # Password validation
